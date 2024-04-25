@@ -1,0 +1,7 @@
+{
+    "User_first": "Now suppose you are the user and want to start conversation by giving a task to assistant on given context '{intent}' for '{domain}' domain. How you will start. As a user, if the intent is regarding a task on some material provided in domain then as a user generate some random material which suits the intent and domain and join the material along with the prompt. Consider a random natural tone for the user and avoid calling assistant or AI.\n\n{format_instructions}",
+
+    "User_next":"\nAbove is a conversation between a user and an assistant. Now suppose you are the user, say something to continue conversation related to the idea '{intent}'. Consider matching the tone of the user from the conversation.\n\n{format_instructions}",
+
+    "Moderator":"\n\nAbove is a conversation between a user and an assistant for content of '{intent}'. Now as a creative moderator, suggest 5 creative conversation ideas actioning the assistant for the user continuing above conversation.\n\n{format_instructions}."
+}

@@ -1,0 +1,21 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# Temp
+Taxonomy
+Chains/py
+
+# Example generated folders and Files
+@Files
+Chains/Automate/@Gen
+@Examples
+
+# Non - necessary Files and Folders
+Chains/Automate/intent-domain-test.json
+Chains/Automate/token_counts.json
+Chains/domain_gen
+Chains/prompt_gen
+
+
+# Key managements
+Chains/Automate/api_key.json
