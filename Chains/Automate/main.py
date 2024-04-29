@@ -14,6 +14,8 @@ MODEL_NAMES = {
     "assistant": AssistantLLM().get_model_name(),
     "moderator": ModeratorLLM().get_model_name()
 }
+# File paths
+DATA_GEN_FILE_PATH = ""
 
 def generate_prompt(is_first_prompt: bool, intent: str, domain: str, conv_turns: list) -> list:
     """
@@ -56,7 +58,7 @@ def generate_prompt(is_first_prompt: bool, intent: str, domain: str, conv_turns:
     conv_turns.append((intent, prompt, response))
     return conv_turns
 
-def conversation_loop(turns: int, intent: str, domain: str, conv_turns: list, doc_id: str, mod_out: list = [], name: str = 'C'):
+def conversation_loop(turns: int, intent: str, domain: str, conv_turns: list, doc_id: str, mod_out: list = [], name: str = 'C-'):
     """
     Perform conversation loop recursively until the specified number of turns is reached.
 
@@ -70,7 +72,13 @@ def conversation_loop(turns: int, intent: str, domain: str, conv_turns: list, do
         name (str, optional): Naming convention for conversation tree branches. Defaults to '1'.
     """
     # Generate a conversation turn
-    conv_turns = generate_prompt(is_first_prompt=(len(conv_turns) == 0), intent=intent, domain=domain, conv_turns=conv_turns)
+    try:
+        conv_turns = generate_prompt(is_first_prompt=(len(conv_turns) == 0), intent=intent, domain=domain, conv_turns=conv_turns)
+    except Exception as e:
+        print(f'Exception:\n{e}')
+        with open(f'{DATA_GEN_FILE_PATH}/@-errors.txt','a') as file:
+            file.write(f"{intent},{domain},{name}")
+        save_conversation(conv_turns, mod_out, domain, name, doc_id)
     
     # Check if the conversation reached the input turns
     if len(conv_turns) >= turns:
@@ -82,20 +90,23 @@ def conversation_loop(turns: int, intent: str, domain: str, conv_turns: list, do
         while retry_count < 3:
             try:
                 mod_ideas = ModeratorLLM(history=conv_turns).suggest_next_sub_intents(intent)
-                mod_ideas = random.sample(mod_ideas,random.randint(0,5))
+                mod_ideas = random.sample(mod_ideas,random.randint(1,1))
                 break
             except Exception as e:
                 print(f'Error occurred: {e}. Retrying...')
                 retry_count += 1
                 continue
+        if len(mod_ideas) == 0:
+            save_conversation(conv_turns, mod_out, domain, name, doc_id)
+            return
 
         # Append moderator ideas to the output
         mod_out.append({f"Turn{len(conv_turns)-1}":mod_ideas})
 
         # Loop through the moderator ideas and start new conversation branches
         for index, mod_idea in enumerate(mod_ideas, start=1):
-            next_name = f"-{name + str(index)}"
-            conversation_loop(turns, mod_idea, domain, conv_turns.copy(), doc_id, mod_out, next_name)
+            next_name = name + str(index) + '-'
+            conversation_loop(turns, mod_idea, domain, conv_turns.copy(), doc_id, mod_out.copy(), next_name)
 
 def save_conversation(conv_turns: list, mod_out: list, domain: str, name: str, doc_id: str):
     """
@@ -109,7 +120,7 @@ def save_conversation(conv_turns: list, mod_out: list, domain: str, name: str, d
         doc_id (str): Identifier for the conversation tree.
     """
     # Define the file path
-    filename = f"/home/varun/Varun/IFT/Chains/Automate/@Mixtral_Examples/{doc_id}/{name}.json"
+    filename = f"{DATA_GEN_FILE_PATH}/{doc_id}/{name[0:-1]}.json"
     # Create directories if they don't exist
     os.makedirs(os.path.dirname(filename), exist_ok=True)
 
@@ -145,7 +156,8 @@ def save_token_count(doc_id: str):
         doc_id (str): Identifier for the conversation tree.
     """
     # Define the file path
-    filename = "/home/varun/Varun/IFT/Chains/Automate/token_counts.json"
+    filename = f"{DATA_GEN_FILE_PATH}/@-token_counts.json"
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
 
     # Read the existing data from the JSON file
     with open(filename, "r") as file:
@@ -194,4 +206,4 @@ def start(turns: int, intent: str, domain: str, doc_id: str):
     # Save token count data after conversation completion
     save_token_count(doc_id)
 
-start(turns=6, intent="to reorder paragraphs", domain="Article", doc_id='sports_example_3')
+start(turns=6, intent="General-purpose Coding Queries", domain="Loops", doc_id='GP_Code')

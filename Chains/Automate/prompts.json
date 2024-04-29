@@ -3,5 +3,5 @@
 
     "User_next":"\nAbove is a conversation between a user and an assistant. Now, suppose you are the user. Say something to continue the conversation related to the idea '{intent}'. Consider matching the tone of the user from the conversation.\n\n{format_instructions}",
 
-    "Moderator":"\n\nAbove is a conversation between a user and an assistant for content of '{intent}'. Now as a creative moderator, suggest 5 creative conversation ideas actioning the assistant for the user continuing above conversation.\n\n{format_instructions}."
+    "Moderator":"\n\nAbove is a conversation between a user and an assistant for the content of '{intent}'. Now, as a creative moderator, suggest 5 creative conversation ideas for the user actioning the assistant for the user to continue the above conversation. Suggest conversation ideas but not the question or prompt itself. \n\n{format_instructions}."
 }

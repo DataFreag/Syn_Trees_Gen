@@ -1,13 +1,18 @@
 # Import nessessary packages
 import os
 import json
+import random
 from typing import List
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain.output_parsers import PydanticOutputParser
 from langchain_community.callbacks import get_openai_callback
+
+# Model Integrations imports
 from langchain_community.chat_models import ChatAnyscale
+from langchain_openai import AzureChatOpenAI
+from langchain_community.chat_models import ChatDeepInfra
 
 
 #CONSTANTS
@@ -23,7 +28,7 @@ with open(PROMPTS_FILE_PATH, 'r') as prompts_file:
 with open(API_KEY_FILE_PATH, 'r') as api_key_file:
     key = json.load(api_key_file)
 
-# TODO: Set environment variables for model
+# TODO: Set common environment variables for model
 os.environ["OPENAI_BASE_URL"] = "https://api.endpoints.anyscale.com/v1"
 os.environ["ANYSCALE_API_KEY"] = key.get("anyscale", "")
 
@@ -31,6 +36,17 @@ os.environ["ANYSCALE_API_KEY"] = key.get("anyscale", "")
 user_token_count = 0
 assistant_token_count = 0
 moderator_token_count = 0
+
+class ModelPool():
+    def __init__(self, models):
+        self.models = models
+        random.shuffle(self.models)
+        self.current_index = 0
+    
+    def get_model(self):
+        model = self.models[self.current_index]
+        self.current_index = (self.current_index + 1) % len(self.models)
+        return model
 
 class Parser:
     """
@@ -94,8 +110,12 @@ class UserLLM:
             model (str, optional): The name of the language model to use. Defaults to "mistralai/Mixtral-8x7B-Instruct-v0.1".
             temperature (float, optional): The sampling temperature for model responses. Defaults to 0.7.
         """
-        # TODO: Initialize the language model and parser
-        self.model = ChatAnyscale(model_name=model, temperature=temperature)
+        # TODO: Initialize the model pool by listing models to avoid limiting errors
+        self.model_pool = ModelPool([
+            ChatAnyscale(model_name=model, temperature=temperature, anyscale_api_key=key.get("anyscale", ""))
+        ])
+        #Initialize the language model and parser
+        self.model = self.model_pool.get_model()
         self.parser = Parser.user_parser()
 
         
@@ -143,8 +163,8 @@ class UserLLM:
             user_token_count += cb.total_tokens
         
         # Console prints
-        print('###User###')
-        print(result)
+        # print('###User###')
+        # print(result)
         return result.prompt
     
     def generate_continuation_prompt(self, intent: str, domain: str) -> str:
@@ -168,8 +188,8 @@ class UserLLM:
             user_token_count += cb.total_tokens
         
         # Console prints
-        print('###User###')
-        print(result)
+        # print('###User###')
+        # print(result)
         return result.prompt
     
     def get_model_name(self) -> str:
@@ -199,8 +219,12 @@ class AssistantLLM():
             model (str, optional): The name of the language model to use. Defaults to "mistralai/Mixtral-8x7B-Instruct-v0.1".
             temperature (float, optional): The sampling temperature for model responses. Defaults to 0.7.
         """
-        # TODO: Initialize the language model and parser
-        self.model = ChatAnyscale(model_name=model, temperature=temperature)
+        # TODO: Initialize the model pool by listing models to avoid limiting errors
+        self.model_pool = ModelPool([
+            ChatAnyscale(model_name=model, temperature=temperature, anyscale_api_key=key.get("anyscale", ""))
+        ])
+        #Initialize the language model and parser
+        self.model = self.model_pool.get_model()
         self.parser = Parser.assistant_parser()
 
         # Initialize prompt template for Assistant prompt chain
@@ -234,8 +258,8 @@ class AssistantLLM():
             assistant_token_count += cb.total_tokens
 
         # Console prints
-        print('###Assistant###')
-        print(result)
+        # print('###Assistant###')
+        # print(result)
         return result
 
     def get_model_name(self) -> str:
@@ -265,8 +289,12 @@ class ModeratorLLM:
             model (str, optional): The name of the language model to use. Defaults to "mistralai/Mixtral-8x7B-Instruct-v0.1".
             temperature (float, optional): The sampling temperature for model responses. Defaults to 0.7.
         """
-        # TODO: Initialize the language model and parser
-        self.model = ChatAnyscale(model_name=model, temperature=temperature)
+        # TODO: Initialize the model pool by listing models to avoid limiting errors
+        self.model_pool = ModelPool([
+            ChatAnyscale(model_name=model, temperature=temperature, anyscale_api_key=key.get("anyscale", ""))
+        ])
+        #Initialize the language model and parser
+        self.model = self.model_pool.get_model()
         self.parser = Parser.moderator_parser()
 
         # Concatenate conversation history into a single string
@@ -304,8 +332,8 @@ class ModeratorLLM:
             moderator_token_count += cb.total_tokens
 
         # Console prints
-        print('###Moderator###')
-        print(ideas)
+        # print('###Moderator###')
+        # print(ideas)
         return ideas.intents
 
     def get_model_name(self) -> str:

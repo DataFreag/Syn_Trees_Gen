@@ -15,7 +15,7 @@ Chains/Automate/intent-domain-test.json
 Chains/Automate/token_counts.json
 Chains/domain_gen
 Chains/prompt_gen
-
+Chains/Automate/Files
 
 # Key managements
 Chains/Automate/api_key.json
