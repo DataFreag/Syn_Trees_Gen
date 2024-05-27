@@ -32,11 +32,6 @@ with open(API_KEY_FILE_PATH, 'r') as api_key_file:
 os.environ["OPENAI_BASE_URL"] = "https://api.endpoints.anyscale.com/v1"
 os.environ["ANYSCALE_API_KEY"] = key.get("anyscale", "")
 
-# Global variables for token count
-user_token_count = 0
-assistant_token_count = 0
-moderator_token_count = 0
-
 class ModelPool():
     def __init__(self, models):
         self.models = models
@@ -151,21 +146,19 @@ class UserLLM:
             domain (str): The domain or topic of the conversation.
 
         Returns:
-            str: The generated prompt for the user.
+            prompt (str): The generated prompt for the user.
+            token_count (int): Count of tokens used for model to produce prompts.
         """
-
-        # Global variable for token count
-        global user_token_count
 
         # Invoke the chain to generate the initiation prompt along with callback for token counts
         with get_openai_callback() as cb:
             result = self.first_chain.invoke({"intent":f"{intent}","domain":f"{domain}"})
-            user_token_count += cb.total_tokens
+            user_token_count = cb.total_tokens
         
         # Console prints
         # print('###User###')
         # print(result)
-        return result.prompt
+        return result.prompt, user_token_count
     
     def generate_continuation_prompt(self, intent: str, domain: str) -> str:
         """
@@ -176,21 +169,19 @@ class UserLLM:
             domain (str): The domain or topic of the conversation.
 
         Returns:
-            str: The generated prompt for the user.
+            prompt (str): The generated prompt for the user.
+            token_count (int): Count of tokens used for model to produce prompts.
         """
-
-        # Global variable for token count
-        global user_token_count
 
         # Invoke the chain to generate the continuation prompt along with callback for token counts
         with get_openai_callback() as cb:
             result = self.next_chain.invoke({"intent":f"{intent}", "domain":f"{domain}"})
-            user_token_count += cb.total_tokens
+            user_token_count = cb.total_tokens
         
         # Console prints
         # print('###User###')
         # print(result)
-        return result.prompt
+        return result.prompt, user_token_count
     
     def get_model_name(self) -> str:
         """
@@ -246,21 +237,19 @@ class AssistantLLM():
             user_prompt (str): The prompt provided by the user.
 
         Returns:
-            str: The generated response from the assistant.
+            response (str): The generated reponse for the user prompt.
+            token_count (int): Count of tokens used for model to produce response.
         """
-
-        # Global variable for token count
-        global assistant_token_count
 
         # Invoke the chain to generate the response prompt along with callback for token counts
         with get_openai_callback() as cb:
             result = self.chain.invoke({"prompt":user_prompt})
-            assistant_token_count += cb.total_tokens
+            assistant_token_count = cb.total_tokens
 
         # Console prints
         # print('###Assistant###')
         # print(result)
-        return result
+        return result, assistant_token_count
 
     def get_model_name(self) -> str:
         """
@@ -320,21 +309,19 @@ class ModeratorLLM:
             intent (str): The current intent.
 
         Returns:
-            list: A list of suggested sub-intents.
+            ideas (list): A list of suggested sub-intents.
+            token_count (int): Count of tokens used for model to produce ideas.
         """
-
-        # Global variable for token count
-        global moderator_token_count
 
         # Invoke the chain to generate the moderator response along with callback for token counts
         with get_openai_callback() as cb:
             ideas = self.chain.invoke({"intent":intent})
-            moderator_token_count += cb.total_tokens
+            moderator_token_count = cb.total_tokens
 
         # Console prints
         # print('###Moderator###')
         # print(ideas)
-        return ideas.intents
+        return ideas.intents, moderator_token_count
 
     def get_model_name(self) -> str:
         """
@@ -344,14 +331,3 @@ class ModeratorLLM:
             str: The name of the language model.
         """
         return self.model.model_name
-    
-def get_token_count() -> list:
-    """
-    Get the total token count for each LLM used for Conversation trees.
-
-    Returns:
-        list: A list containing the token count for the user, assistant, and moderator.
-    """
-    token_list = [user_token_count,assistant_token_count,moderator_token_count]
-    return token_list
-

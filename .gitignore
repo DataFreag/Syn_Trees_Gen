@@ -16,6 +16,7 @@ Chains/Automate/token_counts.json
 Chains/domain_gen
 Chains/prompt_gen
 Chains/Automate/Files
+Flask/
 
 # Key managements
 Chains/Automate/api_key.json
